@@ -7,11 +7,6 @@
 #include <EEPROM.h>
 #include "GravityTDS.h"
 
-//OLED 라이브러리 추가
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
-#include <U8glib.h>  //U8glib 라이브러리 추가 (OLED)
-
 #include <SoftwareSerial.h>  //소프트웨어 시리얼 라이브러리 추가
 #include <DHT.h>    //온습도 센서 라이브러리 추가
 #include <Servo.h>  //서보 모터 라이브러리 추가
@@ -25,10 +20,6 @@
 #define DS1302_CLK 2
 #define DS1302_DAT 3
 #define DS1302_RST 4
-
-// 워터 펌프 핀 지정
-#define AA 5
-#define AB 6
 
 #define RED_LED 7   // 온습도 경고등(적색 LED) - 온습도가 지나치게 높을 때 점등
 #define YEL_LED 12  // tds 경고등(황색 LED) - tds가 지나치게 높을 때 점등
@@ -46,11 +37,6 @@
 
 
 //-----[객체 생성]--------------------------------------------
-// 0.96인치 128x64 OLED
-U8GLIB_SSD1306_128X64 u8g(U8G_I2C_OPT_NONE);  //SSD1306 128X64 I2C 규격 선택 
-
-Adafruit_SSD1306 display(-1); //4개의 핀을 가진 OLED 모듈은 RESET 핀이 없으므로 -1로 처리
-
 // RTC 라이브러리 생성(객체 생성)
 ThreeWire myWire(DS1302_DAT, DS1302_CLK, DS1302_RST);
 RtcDS1302<ThreeWire> Rtc(myWire);
@@ -70,12 +56,7 @@ unsigned long growthTime = 0;     // 생장 LED 제어
 unsigned long tdsTime = 0;        // TDS 센서 제어
 unsigned long lastServoTime = 0;  // 서보모터 제어
 
-unsigned long startPumpTime = 0;  // 펌프 작동 제어1
-unsigned long lastPumpTime = 0;   // 펌프 작동 제어2
-
 int rotateState = 0;  // 서보 모터(창문) 회전 여부 결정
-
-bool pumpRunning = false;  // 펌프 작동 여부 결정
 
 
 //-----[setup]------------------------------------------------
@@ -93,12 +74,11 @@ void setup() {
   RtcDateTime now = Rtc.GetDateTime();
   if (now < compiled) Rtc.SetDateTime(compiled);
 
-  pinMode(RED_LED, OUTPUT);  // 붉은 LED 핀을 출력으로 설정
+	pinMode(RED_LED, OUTPUT);  // 붉은 LED 핀을 출력으로 설정
   pinMode(DC_MOTOR, OUTPUT); // DC 모터 제어 핀 출력용으로 설정
   servoMotor.attach(SERVO);  // 서보모터 초기화
   dht.begin();  // 온습도 모듈 시작 선언
-	u8g.begin();
-	
+
 	//tds
   pinMode(YEL_LED, OUTPUT);  // tds 경고등 출력으로 설정
   gravityTds.setPin(TDS_PIN);
@@ -106,20 +86,16 @@ void setup() {
   gravityTds.setAdcRange(1024);  // 10비트 ADC의 경우 1024, 12비트 ADC의 경우 4096
   gravityTds.begin();  // 초기화
 
-	// 워터펌프
-	pinMode(AA, OUTPUT);
-  pinMode(AB, OUTPUT);
-
 	// 생장LED(임시)
 	pinMode(GROWTH_LED, OUTPUT);
-}	
+}
 
 
 //-----[loop문]-----------------------------------------------
 void loop() {
   currTime = millis();  // millis() 시작
 
-  // 각종 센서값 읽기
+	// 각종 센서값 읽기
   RtcDateTime now = Rtc.GetDateTime();        // RTC 모듈로부터 현재 시간 얻기
   int lightValue = analogRead(LIGHT_CDS);     // CDS 조도값
   float tdsValue = gravityTds.getTdsValue();  // TDS 값 가져오기
@@ -129,7 +105,7 @@ void loop() {
     return;
   }
 
-  if (currTime - sensorTime >= 5000) {  // 5초 간격으로 센서값 Serial에 표시
+	if (currTime - sensorTime >= 5000) {  // 5초 간격으로 센서값 Serial에 표시
     sensorTime = currTime;
 
     // Serial 시간 표시
@@ -149,24 +125,7 @@ void loop() {
     Serial.println("ppm")
   }
 
-  // OLED
-  u8g.firstPage(); //picture loop의 시작
-  do {
-    u8g.setFont(u8g_font_fub14); //온도, 습도 폰트지정
-    u8g.setPrintPos(5, 20); //온도 데이터 출력 커서 설정
-
-    u8g.print(temperature,1); //온도 데이터(소수점 첫째 자리) 출력
-    u8g.print("\xb0""C"); //온도 기호(°C) 출력 
-    u8g.setPrintPos(70, 20); //습도 데이터 출력 커서 설정
-    u8g.print(humidity,1); //습도 데이터(소수점 첫째 자리) 출력
-    u8g.print("%"); //습도 기호(%) 출력
-    u8g.setFont(u8g_font_fub20); //TDS 폰트지정
-    u8g.setPrintPos(40, 55); //TDS 데이터 출력 커서 설정
-    u8g.print(tdsValue,1); //tds 데이터(소수점 첫째 자리) 출력
-		u8g.print("ppm"); // tds 기호(ppm) 출력
-  } while(u8g.nextPage()); //picture loop의 끝  
-
-  // 온습도에 따른 환기팬 동작
+	// 온습도에 따른 환기팬 동작
   if (temperature >= 26 || humidity >= 60) {
     digitalWrite(DC_MOTOR, HIGH);  // 릴레이 모듈을 사용하여 DC모터(환기팬) 작동
     digitalWrite(RED_LED, HIGH);   // 경고등 켜기
@@ -175,8 +134,8 @@ void loop() {
     digitalWrite(RED_LED, LOW);   // 경고등 끄기
   }
 
-  // 1시간에 한 번씩 서보모터(창문 여닫이) 동작
-  if (currTime - lastServoTime >= 3600000) {  // 1시간(60분 * 60초 * 1000밀리초)
+	// 1시간에 한 번씩 서보모터(창문 여닫이) 동작
+  if (currTime - lastServoTime >= 5000) {  // 1시간(60분 * 60초 * 1000밀리초)
     // 서보모터 열기 또는 닫기
     if (rotateState == 0) {
       servoMotor.write(90);  // 서보모터를 90도로 열기
@@ -188,24 +147,7 @@ void loop() {
     lastServoTime = millis();  // 서보모터가 동작한 시간 갱신
   }
 
-  // 워터펌프
-  // 펌프가 작동하지 않고, 다음 작동 시간에 도달했을 때
-  if (!pumpRunning && currTime - lastPumpTime >= 3600000) {
-    pumpRunning = true; // 펌프 작동 시작
-    lastPumpTime = currTime ; // 다음 이벤트를 위한 시간 업데이트
-    startPumpTime = currTime; // 펌프 시작 시간 기록
-    digitalWrite(AA, HIGH);
-    digitalWrite(AB, LOW);
-  }
-
-  // 펌프가 작동 중이고, 10초가 경과했을 때
-  if (pumpRunning && currTime - startPumpTime >= 10000) {
-    digitalWrite(AA, LOW); // 펌프 작동 정지
-    digitalWrite(AB, LOW);
-    pumpRunning = false; // 펌프 작동 상태 업데이트
-  }
-
-  // tds
+	// tds
   if (currTime - tdsTime >= 10000) {  // 마지막 측정 시간으로부터 10초가 경과했는지 확인
     tdsTime = currTime;  // 마지막 측정 시간 업데이트
 
@@ -221,7 +163,7 @@ void loop() {
     }
 	}
 
-  // 생장 led 제어
+	// 생장 led 제어
   if (currTime - growthTime >= 5000)
   {
     growthTime = currTime;
