@@ -9,7 +9,7 @@
 
 #include <SoftwareSerial.h>  //소프트웨어 시리얼 라이브러리 추가
 #include <DHT.h>    //온습도 센서 라이브러리 추가
-#include <Servo.h>  //서보 모터 라이브러리 추가
+/*  #include <Servo.h>  //서보 모터 라이브러리 추가 */
 
 
 //-----[핀 번호 정의] ----------------------------------------
@@ -22,7 +22,7 @@
 #define DS1302_RST 4
 
 #define RED_LED 7   // 온습도 경고등(적색 LED) - 온습도가 지나치게 높을 때 점등
-#define YEL_LED 12  // tds 경고등(황색 LED) - tds가 지나치게 높을 때 점등
+#define YEL_LED 6   // tds 경고등(황색 LED) - tds가 지나치게 높을 때 점등
 
 // 온습도 센서
 #define DHTPIN 8  // 온습도 센서 핀으로 설정
@@ -30,9 +30,9 @@
 
 // 모터 모듈
 #define DC_MOTOR 9  // DC모터를 제어할 릴레이 모듈 핀 번호
-#define SERVO 11    // 서보모터를 연결한 핀 번호
+/*  #define SERVO 11    // 서보모터를 연결한 핀 번호  */
 
-// 생장 LED(임시로 흰색 LED 점등하는 것으로 test)
+// 생장 LED
 #define GROWTH_LED 10
 
 
@@ -43,7 +43,7 @@ RtcDS1302<ThreeWire> Rtc(myWire);
 
 DHT dht(DHTPIN, DHTTYPE);  // DHT 센서 초기화
 
-Servo servoMotor;  // 서보모터 객체 선언
+/*  Servo servoMotor;  // 서보모터 객체 선언  */
 
 GravityTDS gravityTds;  // tds 센서 객체 선언
 
@@ -54,9 +54,9 @@ unsigned long currTime = 0;
 unsigned long sensorTime = 0;     // sensor print 제어
 unsigned long growthTime = 0;     // 생장 LED 제어
 unsigned long tdsTime = 0;        // TDS 센서 제어
-unsigned long lastServoTime = 0;  // 서보모터 제어
+/*  unsigned long lastServoTime = 0;  // 서보모터 제어  */
 
-int rotateState = 0;  // 서보 모터(창문) 회전 여부 결정
+/*  int rotateState = 0;  // 서보 모터(창문) 회전 여부 결정  */
 
 
 //-----[setup]------------------------------------------------
@@ -76,7 +76,8 @@ void setup() {
 
 	pinMode(RED_LED, OUTPUT);  // 붉은 LED 핀을 출력으로 설정
   pinMode(DC_MOTOR, OUTPUT); // DC 모터 제어 핀 출력용으로 설정
-  servoMotor.attach(SERVO);  // 서보모터 초기화
+  /*  servoMotor.attach(SERVO);  // 서보모터 초기화  */
+  pinMode(GROWTH_LED, OUTPUT);  // 생장 LED 핀 출력용으로 설
   dht.begin();  // 온습도 모듈 시작 선언
 
 	//tds
@@ -85,9 +86,6 @@ void setup() {
   gravityTds.setAref(5.0);  // ADC의 참조 전압 설정, 아두이노 UNO에서 기본값은 5.0V
   gravityTds.setAdcRange(1024);  // 10비트 ADC의 경우 1024, 12비트 ADC의 경우 4096
   gravityTds.begin();  // 초기화
-
-	// 생장LED(임시)
-	pinMode(GROWTH_LED, OUTPUT);
 }
 
 
@@ -121,7 +119,7 @@ void loop() {
     Serial.print("  조도: ");
     Serial.print(lightValue);  // 조도
     Serial.print("  TDS: ");
-		Serial.println(tdsValue, 0);  // tds
+		Serial.print(tdsValue, 0);  // tds
     Serial.println("ppm");
   }
 
@@ -129,11 +127,12 @@ void loop() {
   if (temperature >= 26 || humidity >= 60) {
     digitalWrite(DC_MOTOR, HIGH);  // 릴레이 모듈을 사용하여 DC모터(환기팬) 작동
     digitalWrite(RED_LED, HIGH);   // 경고등 켜기
-  } else if (temperature <= 25 && humidity <= 40) {
+  } else if (temperature <= 26 && humidity <= 40) {
     digitalWrite(DC_MOTOR, LOW);  // DC모터(환기팬) 작동 중지
     digitalWrite(RED_LED, LOW);   // 경고등 끄기
   }
 
+/*
 	// 1시간에 한 번씩 서보모터(창문 여닫이) 동작
   if (currTime - lastServoTime >= 5000) {  // 1시간(60분 * 60초 * 1000밀리초)
     // 서보모터 열기 또는 닫기
@@ -146,6 +145,7 @@ void loop() {
     }
     lastServoTime = millis();  // 서보모터가 동작한 시간 갱신
   }
+*/
 
 	// tds
   if (currTime - tdsTime >= 10000) {  // 마지막 측정 시간으로부터 10초가 경과했는지 확인
@@ -168,9 +168,9 @@ void loop() {
   {
     growthTime = currTime;
     // 9:00 ~ 18:00 사이 조도값에 따른 LED 제어
-	  if (now.Hour() >= 9 && now.Hour() < 18 && lightValue <= 500) {
+	  if (now.Hour() >= 9 && now.Hour() < 18 && lightValue <= 800) {
 	    digitalWrite(GROWTH_LED, HIGH); // 낮 동안 조도값이 낮으면 LED 켜기
-	  } else if ((now.Hour() >= 18 || now.Hour() < 9) && lightValue > 500) {
+	  } else if ((now.Hour() >= 18 || now.Hour() < 9) && lightValue > 800) {
 	    digitalWrite(GROWTH_LED, LOW); // 저녁이거나 조도값이 높으면 LED 끄기
 	  }
   }
