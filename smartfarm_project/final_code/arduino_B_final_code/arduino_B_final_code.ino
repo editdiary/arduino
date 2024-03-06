@@ -4,7 +4,7 @@ const int AB = 9;
 unsigned long previousMillis = 0;   // 마지막 작동 시작 시간
 unsigned long pumpStartMillis = 0;  // 펌프가 시작된 시간
 const long interval = 3600000;      // 이벤트 간의 시간 (1시간 = 3600000 밀리초)
-const long pumpTime = 150000;       // 펌프가 작동하는 시간 (10초)
+const long pumpTime = 150000;       // 펌프가 작동하는 시간 (15초)
 bool pumpRunning = false;           // 펌프가 현재 작동 중인지 여부
 
 void setup() {
