@@ -143,10 +143,10 @@ void loop() {
   }
 
 	// 온습도에 따른 환기팬 제어
-  if (temperature >= 26 || humidity >= 60) {
+  if (temperature >= 27.0 || humidity >= 60) {
     digitalWrite(DC_MOTOR, HIGH);  // 릴레이 모듈을 사용하여 DC모터(환기팬) 작동
     digitalWrite(RED_LED, HIGH);   // 경고등 켜기
-  } else if (temperature <= 25 && humidity <= 40) {
+  } else if (temperature <= 26.5 && humidity <= 40) {
     digitalWrite(DC_MOTOR, LOW);   // DC모터(환기팬) 작동 중지
     digitalWrite(RED_LED, LOW);    // 경고등 끄기
   }
@@ -159,7 +159,7 @@ void loop() {
     gravityTds.update();  // 샘플링 및 계산
 
     // TDS 값이 600ppm 이상일 경우 경고등(황색) 켜기
-    if (tdsValue >= 600) {
+    if (tdsValue >= 800) {
         digitalWrite(YEL_LED, HIGH);  // 경고등(황색) 켜기
     } else {
         digitalWrite(YEL_LED, LOW);   // 경고등(황색) 끄기
