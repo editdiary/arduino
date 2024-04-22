@@ -123,6 +123,10 @@ void loop() {
     display.println("%");          // 습도 기호(%) 출력
     display.print(tdsValue,1);     // tds 데이터(소수점 첫째 자리) 출력
 		display.println("ppm");        // tds 기호(ppm) 출력
+    display.print(now.Hour());
+    display.print("h ");
+    display.print(now.Minute());
+    display.println("m");
     display.display(); 
 
     // Serial
@@ -146,7 +150,7 @@ void loop() {
   if (temperature >= 27.0 || humidity >= 60) {
     digitalWrite(DC_MOTOR, HIGH);  // 릴레이 모듈을 사용하여 DC모터(환기팬) 작동
     digitalWrite(RED_LED, HIGH);   // 경고등 켜기
-  } else if (temperature <= 26.5 && humidity <= 40) {
+  } else if (temperature <= 26.3 && humidity <= 40) {
     digitalWrite(DC_MOTOR, LOW);   // DC모터(환기팬) 작동 중지
     digitalWrite(RED_LED, LOW);    // 경고등 끄기
   }
@@ -170,10 +174,10 @@ void loop() {
   if (currTime - growthTime >= 5000)
   {
     growthTime = currTime;
-    // 9:00 ~ 18:00 사이 조도값에 따른 LED 제어
-	  if (now.Hour() >= 9 && now.Hour() < 18 && lightValue <= 800) {
+    // 6:00 ~ 21:00 사이 조도값에 따른 LED 제어
+	  if (now.Hour() >= 6 && now.Hour() < 21 && lightValue <= 800) {
 	    digitalWrite(GROWTH_LED, HIGH);  // 낮 동안 조도값이 낮으면 LED 켜기
-	  } else if ((now.Hour() >= 18 || now.Hour() < 9) && lightValue > 800) {
+	  } else if ((now.Hour() >= 21 || now.Hour() < 6) && lightValue > 800) {
 	    digitalWrite(GROWTH_LED, LOW);   // 밤 동안 조도값이 높으면 LED 끄기
 	  }
   }
